@@ -145,6 +145,7 @@ public final class Protocol1_21_11To26_1 extends AbstractProtocol<ClientboundPac
         });
         registryDataRewriter.addHandler("dimension_type", (key, tag) -> {
             tag.putBoolean("has_ender_dragon_fight", Key.equals(key, "the_end"));
+            addLegacyDefaultClock(key, tag);
 
             CompoundTag attributes = tag.getCompoundTag("attributes");
             if (attributes == null) {
@@ -165,12 +166,7 @@ public final class Protocol1_21_11To26_1 extends AbstractProtocol<ClientboundPac
 
             final long dayTime = wrapper.read(Types.LONG);
             final boolean tickDayTime = wrapper.read(Types.BOOLEAN);
-
-            wrapper.write(Types.VAR_INT, 1); // One!
-            wrapper.write(Types.VAR_INT, 0); // Overworld clock
-            wrapper.write(Types.VAR_LONG, dayTime); // Total ticks
-            wrapper.write(Types.FLOAT, 0F); // Partial tick
-            wrapper.write(Types.FLOAT, tickDayTime ? 1F : 0F); // Tick rate
+            writeLegacyClockUpdates(wrapper, dayTime, tickDayTime);
         });
 
         replaceClientbound(ClientboundPackets1_21_11.UPDATE_TAGS, this::handleTags);
@@ -183,6 +179,26 @@ public final class Protocol1_21_11To26_1 extends AbstractProtocol<ClientboundPac
                 wrapper.cancel();
             }
         });
+    }
+
+    static void writeLegacyClockUpdates(final PacketWrapper wrapper, final long dayTime, final boolean tickDayTime) {
+        wrapper.write(Types.VAR_INT, 2);
+        writeClockUpdate(wrapper, 0, dayTime, tickDayTime); // Overworld clock
+        writeClockUpdate(wrapper, 1, dayTime, tickDayTime); // The End clock
+    }
+
+    private static void writeClockUpdate(final PacketWrapper wrapper, final int clockId, final long dayTime, final boolean tickDayTime) {
+        wrapper.write(Types.VAR_INT, clockId);
+        wrapper.write(Types.VAR_LONG, dayTime);
+        wrapper.write(Types.FLOAT, 0F);
+        wrapper.write(Types.FLOAT, tickDayTime ? 1F : 0F);
+    }
+
+    static void addLegacyDefaultClock(final String dimensionTypeKey, final CompoundTag tag) {
+        switch (Key.stripMinecraftNamespace(dimensionTypeKey)) {
+            case "overworld", "overworld_caves" -> tag.putString("default_clock", "minecraft:overworld");
+            case "the_end" -> tag.putString("default_clock", "minecraft:the_end");
+        }
     }
 
     private void handleTags(final PacketWrapper wrapper) {
