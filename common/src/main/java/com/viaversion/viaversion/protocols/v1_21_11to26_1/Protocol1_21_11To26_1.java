@@ -190,9 +190,9 @@ public final class Protocol1_21_11To26_1 extends AbstractProtocol<ClientboundPac
 
     private void writeClockUpdate(final PacketWrapper wrapper, final int clockId, final long dayTime, final boolean tickDayTime) {
         wrapper.write(Types.VAR_INT, clockId);
-        wrapper.write(Types.VAR_LONG, dayTime);
-        wrapper.write(Types.FLOAT, 0F);
-        wrapper.write(Types.FLOAT, tickDayTime ? 1F : 0F);
+        wrapper.write(Types.VAR_LONG, dayTime); // Total ticks
+        wrapper.write(Types.FLOAT, 0F); // Partial tick
+        wrapper.write(Types.FLOAT, tickDayTime ? 1F : 0F); // Tick rate
     }
 
     private void handleTags(final PacketWrapper wrapper) {
